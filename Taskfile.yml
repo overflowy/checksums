@@ -1,0 +1,19 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  LOCAL_BIN: ~/.local/bin
+
+tasks:
+  default:
+    cmds:
+      - task --list
+    silent: true
+
+  install:
+    desc: Install checksums
+    cmds:
+      - go build -o checksums main.go
+      - mv checksums {{.LOCAL_BIN}}/checksums
+
