@@ -207,16 +207,18 @@ func verify(cfg Config, checksumFileName string) {
 		go func() {
 			defer wg.Done()
 			for line := range jobs {
-				p := strings.Fields(line)
-				if len(p) < 2 {
+				// Format: "<hash>  <path>" (two spaces between hash and path)
+				idx := strings.Index(line, "  ")
+				if idx <= 0 {
 					continue
 				}
-				rel := filepath.FromSlash(strings.Join(p[1:], " "))
+				expectedHash := line[:idx]
+				rel := filepath.FromSlash(line[idx+2:])
 				full := filepath.Join(cfg.RootDir, rel)
 				h, _, err := hashFile(full, cfg.HashFunc)
 				if err != nil {
 					results <- colorRed + "[MISSING] " + rel + colorReset
-				} else if h == p[0] {
+				} else if h == expectedHash {
 					results <- colorGreen + "[OK]      " + rel + colorReset
 				} else {
 					results <- colorRed + "[FAILED]  " + rel + colorReset
@@ -279,9 +281,12 @@ func readChecksumMap(path string) map[string]string {
 	defer f.Close()
 	s := bufio.NewScanner(f)
 	for s.Scan() {
-		p := strings.Fields(s.Text())
-		if len(p) >= 2 {
-			m[p[1]] = p[0]
+		line := s.Text()
+		// Format: "<hash>  <path>" (two spaces between hash and path)
+		if idx := strings.Index(line, "  "); idx > 0 {
+			hash := line[:idx]
+			filePath := line[idx+2:]
+			m[filePath] = hash
 		}
 	}
 	return m
