@@ -235,17 +235,21 @@ func verify(cfg Config, checksumFileName string) {
 
 	go func() { wg.Wait(); close(results) }()
 
-	failed := false
+	errorCount := 0
 	checked := 0
 	for msg := range results {
 		fmt.Println(msg)
 		checked++
 		if strings.Contains(msg, "[FAILED]") || strings.Contains(msg, "[MISSING]") {
-			failed = true
+			errorCount++
 		}
 	}
-	if failed {
-		fmt.Println(colorRed + "Errors found." + colorReset)
+	if errorCount == 1 {
+		fmt.Printf("%s1 error found.%s\n", colorRed, colorReset)
+		os.Exit(1)
+	}
+	if errorCount > 0 {
+		fmt.Printf("%s%d errors found.%s\n", colorRed, errorCount, colorReset)
 		os.Exit(1)
 	}
 	fmt.Printf("No errors found.\n")
