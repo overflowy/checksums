@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/md5"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -49,7 +50,7 @@ type FileResult struct {
 var totalBytes int64
 
 func main() {
-	algoFlag := flag.String("algo", "sha256", "Algorithm: md5, sha256")
+	algoFlag := flag.String("algo", "sha256", "Algorithm: md5, sha256, sha512")
 	updateFlag := flag.Bool("update", false, "Only hash new files missing from existing checksum file")
 	excludeFlag := flag.String("exclude", "", "Comma-separated list of names to skip (e.g. .git,node_modules)")
 	flag.Parse()
@@ -60,6 +61,9 @@ func main() {
 	case "md5":
 		hashFunc = md5.New
 		ext = ".md5"
+	case "sha512":
+		hashFunc = sha512.New
+		ext = ".sha512"
 	default:
 		hashFunc = sha256.New
 		ext = ".sha256"
@@ -175,8 +179,13 @@ func generate(cfg Config, checksumFileName string) {
 
 	elapsed := time.Since(start)
 	speed := float64(atomic.LoadInt64(&totalBytes)) / elapsed.Seconds()
-	fmt.Printf("\nDone! %d files total. Avg Speed: %s/s, Time: %v\n",
-		len(results), formatBytes(int64(speed)), elapsed.Round(time.Millisecond))
+	totalSize := atomic.LoadInt64(&totalBytes)
+
+	fmt.Printf("\r%-80s\rOutput file:   %s\n", "", checksumFileName)
+	fmt.Printf("Total files:   %d\n", len(results))
+	fmt.Printf("Total size:    %s\n", formatBytes(totalSize))
+	fmt.Printf("Average speed: %s/s\n", formatBytes(int64(speed)))
+	fmt.Printf("Time elapsed:  %v\n", elapsed.Round(time.Millisecond))
 }
 
 func verify(cfg Config, checksumFileName string) {
@@ -238,7 +247,7 @@ func verify(cfg Config, checksumFileName string) {
 		fmt.Println(colorRed + "Errors found." + colorReset)
 		os.Exit(1)
 	}
-	fmt.Printf(colorGreen+"All %d files OK.\n"+colorReset, checked)
+	fmt.Printf("No errors found.\n")
 }
 
 func hashFile(path string, factory func() hash.Hash) (string, int64, error) {
