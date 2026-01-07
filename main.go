@@ -53,6 +53,7 @@ func main() {
 	algoFlag := flag.String("algo", "sha256", "Algorithm: md5, sha256, sha512")
 	updateFlag := flag.Bool("update", false, "Only hash new files missing from existing checksum file")
 	excludeFlag := flag.String("exclude", "", "Comma-separated list of names to skip (e.g. .git,node_modules)")
+	workersFlag := flag.Int("workers", runtime.NumCPU(), "Number of worker goroutines")
 	flag.Parse()
 
 	var hashFunc func() hash.Hash
@@ -83,7 +84,7 @@ func main() {
 	cfg := Config{
 		RootDir:    absPath,
 		Algo:       *algoFlag,
-		NumWorkers: runtime.NumCPU(),
+		NumWorkers: *workersFlag,
 		OutputExt:  ext,
 		Update:     *updateFlag,
 		Excludes:   excludes,
